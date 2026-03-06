@@ -1055,32 +1055,89 @@ function copyPost(){
   else fb(t,flash);
 }
 function shareToX(){
-  const t=encodeURIComponent(buildShareText().substring(0,280));
-  window.open(`https://twitter.com/intent/tweet?text=${t}`,'_blank');
+  // X/Twitter intent — opens twitter.com/x.com with pre-filled tweet text
+  // Trim to 280 chars to respect character limit
+  const raw = buildShareText();
+  const skool = 'https://www.skool.com/devons-group-8553/about';
+  // Build a concise tweet that fits within 280 chars (URL counts as ~23)
+  const day = S.day;
+  const done = Object.values(S.checks).filter(Boolean).length;
+  const tweet = `Day ${day} of #75HEALED ✓\n\nNervous system strength. One day at a time.\n\nJoin us → ${skool}\n\n#75HEALED #75HEALEDday${day} #NervousSystemStrength`;
+  const t = encodeURIComponent(tweet.substring(0, 270));
+  // Try X app first (mobile), fall back to web
+  const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+  if (isMobile) {
+    // twitter:// deep link opens the Twitter/X app directly
+    const appUrl = `twitter://post?message=${t}`;
+    const webUrl = `https://twitter.com/intent/tweet?text=${t}`;
+    const start = Date.now();
+    window.location.href = appUrl;
+    setTimeout(() => { if (Date.now() - start < 2000) window.open(webUrl, '_blank'); }, 800);
+  } else {
+    window.open(`https://twitter.com/intent/tweet?text=${t}`, '_blank');
+  }
   awardXP('🏆 +15 XP — Shared on X!');
 }
 function shareToFB(){
-  const url=encodeURIComponent('https://www.skool.com/devons-group-8553/about');
-  window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`,'_blank');
+  // Facebook share dialog — opens with pre-filled quote and the Skool URL
+  const skool = encodeURIComponent('https://www.skool.com/devons-group-8553/about');
+  const quote = encodeURIComponent(`Day ${S.day} of #75HEALED — Nervous system strength. One day at a time. Join us!`);
+  const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${skool}&quote=${quote}`;
+  // Try Facebook app deep link on mobile
+  const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+  if (isMobile) {
+    const appUrl = `fb://share?href=${skool}`;
+    const start = Date.now();
+    window.location.href = appUrl;
+    setTimeout(() => { if (Date.now() - start < 2000) window.open(fbUrl, '_blank'); }, 800);
+  } else {
+    window.open(fbUrl, '_blank');
+  }
   awardXP('🏆 +15 XP — Shared on Facebook!');
 }
 function shareToWA(){
-  const t=encodeURIComponent(buildShareText());
-  window.open(`https://wa.me/?text=${t}`,'_blank');
+  // WhatsApp — opens app directly with pre-filled message
+  const text = buildShareText();
+  const t = encodeURIComponent(text);
+  const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+  // whatsapp:// opens the app on mobile; web.whatsapp.com on desktop
+  const url = isMobile
+    ? `whatsapp://send?text=${t}`
+    : `https://web.whatsapp.com/send?text=${t}`;
+  window.open(url, '_blank');
   awardXP('🏆 +15 XP — Shared on WhatsApp!');
 }
 function shareToIG(){
-  const t=buildShareText();
-  const btn=document.getElementById('copyBtn');
-  const flash=()=>{
-    btn.classList.add('copied');
-    const lbl=btn.querySelector('span:last-child');
-    lbl.textContent='Copied!';
-    awardXP('📸 Caption copied — paste it on Instagram!');
-    setTimeout(()=>{ btn.classList.remove('copied'); lbl.textContent='Copy'; },2400);
+  // Instagram has no web share API — best approach:
+  // 1. Copy the caption to clipboard
+  // 2. Try to open Instagram app via deep link
+  // 3. Show a clear instruction toast
+  const t = buildShareText();
+  const openIG = () => {
+    const isMobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      // instagram:// opens the app; camera is the share entry point
+      const start = Date.now();
+      window.location.href = 'instagram://camera';
+      setTimeout(() => {
+        if (Date.now() - start < 2000) window.open('https://www.instagram.com/', '_blank');
+      }, 800);
+    } else {
+      window.open('https://www.instagram.com/', '_blank');
+    }
+    // Show instruction overlay
+    const xpEl = document.getElementById('shareXP');
+    xpEl.textContent = '📸 Caption copied! Open Instagram → New Post → paste caption';
+    xpEl.classList.remove('xp-animate');
+    void xpEl.offsetWidth;
+    xpEl.classList.add('xp-animate');
   };
-  if(navigator.clipboard?.writeText) navigator.clipboard.writeText(t).then(flash).catch(()=>fb(t,flash));
-  else fb(t,flash);
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(t).then(openIG).catch(() => { fb(t, openIG); });
+  } else {
+    fb(t, openIG);
+  }
+  awardXP('📸 +15 XP — Caption copied for Instagram!');
 }
 
 function fb(text,cb){
