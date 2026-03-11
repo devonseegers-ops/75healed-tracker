@@ -1072,7 +1072,10 @@ function copySocial(){
 }
 function copyCommunity(){
   const t=buildCommunityPost();
-  const done=()=>flashBtn('communityBtn','communityBtnLbl','Community Post','🌿 Copied!');
+  const done=()=>{
+    flashBtn('communityBtn','communityBtnLbl','Community Post','🌿 Copied!');
+    window.open('https://www.skool.com/devons-group-8553/about','_blank');
+  };
   if(navigator.clipboard?.writeText) navigator.clipboard.writeText(t).then(done).catch(()=>fb(t,done));
   else fb(t,done);
 }
